@@ -6,6 +6,7 @@
     >Inertia.js - Svelte Template with Tailwind CSS and Golang backend</title
   >
 </svelte:head>
+
 <div class="relative isolate px-6 pt-14 lg:px-8">
   <div
     class="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80"

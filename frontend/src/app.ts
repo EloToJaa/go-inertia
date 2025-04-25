@@ -1,4 +1,5 @@
 import { createInertiaApp } from "@inertiajs/svelte";
+import { mount } from "svelte";
 import "./app.css";
 
 createInertiaApp({
@@ -8,7 +9,9 @@ createInertiaApp({
     return pages[`./pages/${name}.svelte`];
   },
   setup({ el, App, props }) {
-    // @ts-expect-error
-    new App({ target: el, props });
+    if (el === null) {
+      throw new Error("Could not find element with id 'app'");
+    }
+    mount(App, { target: el, props });
   },
 });
