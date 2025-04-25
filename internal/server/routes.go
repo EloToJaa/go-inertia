@@ -2,39 +2,48 @@ package server
 
 import (
 	"encoding/json"
+	inertiaInit "go-inertia/internal/inertia"
+	"go-inertia/internal/middleware"
 	"log"
 	"net/http"
+
+	inertia "github.com/romsar/gonertia/v2"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
+	i := inertiaInit.InitInertia()
+
 	mux := http.NewServeMux()
 
 	// Register routes
-	mux.HandleFunc("/", s.HelloWorldHandler)
+	mux.Handle("GET /build/", http.StripPrefix("/build/", http.FileServer(http.Dir("./frontend/public/build"))))
+	mux.HandleFunc("GET /health", s.healthHandler)
 
-	mux.HandleFunc("/health", s.healthHandler)
+	mux.Handle("GET /", i.Middleware(s.HomeHandler(i)))
+	mux.HandleFunc("GET /hello", s.HelloWorldHandler)
 
 	// Wrap the mux with CORS middleware
-	return s.corsMiddleware(mux)
+	return middleware.CorsMiddleware(mux)
 }
 
-func (s *Server) corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set CORS headers
-		w.Header().Set("Access-Control-Allow-Origin", "*") // Replace "*" with specific origins if needed
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-		w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
-		w.Header().Set("Access-Control-Allow-Credentials", "false") // Set to "true" if credentials are required
+func handleServerErr(w http.ResponseWriter, err error) {
+	log.Printf("http error: %s\n", err)
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Write([]byte("server error"))
+}
 
-		// Handle preflight OPTIONS requests
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
+func (s *Server) HomeHandler(i *inertia.Inertia) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		err := i.Render(w, r, "home/index", inertia.Props{
+			"text": "Inertia.js with Svelte and Go! 💙",
+		})
+		if err != nil {
+			handleServerErr(w, err)
 			return
 		}
+	}
 
-		// Proceed with the next handler
-		next.ServeHTTP(w, r)
-	})
+	return http.HandlerFunc(fn)
 }
 
 func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {

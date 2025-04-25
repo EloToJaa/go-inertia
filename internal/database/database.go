@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"go-inertia/internal/repository"
 	"log"
 	"os"
 	"strconv"
@@ -22,10 +23,14 @@ type Service interface {
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close() error
+
+	// GetRepository returns a repository.Queries instance that can be used to interact with the database.
+	GetRepository() *repository.Queries
 }
 
 type service struct {
-	db *sql.DB
+	db   *sql.DB
+	repo *repository.Queries
 }
 
 var (
@@ -112,4 +117,8 @@ func (s *service) Health() map[string]string {
 func (s *service) Close() error {
 	log.Printf("Disconnected from database: %s", database)
 	return s.db.Close()
+}
+
+func (s *service) GetRepository() *repository.Queries {
+	return dbInstance.repo
 }
