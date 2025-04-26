@@ -15,7 +15,7 @@ func (s *Server) RegisterInertiaRoutes() http.Handler {
 	router.HandleFunc("GET /", s.HomeHandler)
 
 	// Wrap the mux with CORS middleware
-	return middleware.CorsMiddleware(s.inertia.Middleware(router))
+	return s.inertia.Middleware(router)
 }
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -27,8 +27,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	router.HandleFunc("GET /hello", s.HelloWorldHandler)
 
-	// Wrap the mux with CORS middleware
-	return middleware.CorsMiddleware(router)
+	return router
 }
 
 func handleServerErr(w http.ResponseWriter, err error) {

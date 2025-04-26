@@ -3,14 +3,16 @@ package server
 import (
 	"fmt"
 	"go-inertia/internal/database"
+	"go-inertia/internal/middleware"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 
+	inertiaInit "go-inertia/internal/inertia"
+
 	_ "github.com/joho/godotenv/autoload"
 	inertia "github.com/romsar/gonertia/v2"
-	inertiaInit "go-inertia/internal/inertia"
 )
 
 type Server struct {
@@ -27,10 +29,17 @@ func NewServer() *http.Server {
 		db:      database.New(),
 	}
 
+	stack := middleware.CreateStack(
+		middleware.Logging,
+		middleware.Cors,
+	)
+
+	router := NewServer.RegisterRoutes()
+
 	// Declare Server config
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", NewServer.port),
-		Handler:      NewServer.RegisterRoutes(),
+		Handler:      stack(router),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
