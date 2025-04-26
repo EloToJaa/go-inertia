@@ -2,28 +2,29 @@ package server
 
 import (
 	"fmt"
+	"go-inertia/internal/database"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
-
-	"go-inertia/internal/database"
+	inertia "github.com/romsar/gonertia/v2"
+	inertiaInit "go-inertia/internal/inertia"
 )
 
 type Server struct {
-	port int
-
-	db database.Service
+	port    int
+	inertia *inertia.Inertia
+	db      database.Service
 }
 
 func NewServer() *http.Server {
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
 	NewServer := &Server{
-		port: port,
-
-		db: database.New(),
+		port:    port,
+		inertia: inertiaInit.InitInertia(),
+		db:      database.New(),
 	}
 
 	// Declare Server config

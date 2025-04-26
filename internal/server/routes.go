@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	inertiaInit "go-inertia/internal/inertia"
 	"go-inertia/internal/middleware"
 	"log"
 	"net/http"
@@ -10,20 +9,26 @@ import (
 	inertia "github.com/romsar/gonertia/v2"
 )
 
-func (s *Server) RegisterRoutes() http.Handler {
-	i := inertiaInit.InitInertia()
+func (s *Server) RegisterInertiaRoutes() http.Handler {
+	router := http.NewServeMux()
 
-	mux := http.NewServeMux()
-
-	// Register routes
-	mux.Handle("GET /build/", http.StripPrefix("/build/", http.FileServer(http.Dir("./frontend/public/build"))))
-	mux.HandleFunc("GET /health", s.healthHandler)
-
-	mux.Handle("GET /", i.Middleware(s.HomeHandler(i)))
-	mux.HandleFunc("GET /hello", s.HelloWorldHandler)
+	router.HandleFunc("GET /", s.HomeHandler)
 
 	// Wrap the mux with CORS middleware
-	return middleware.CorsMiddleware(mux)
+	return middleware.CorsMiddleware(s.inertia.Middleware(router))
+}
+
+func (s *Server) RegisterRoutes() http.Handler {
+	router := http.NewServeMux()
+
+	// Register routes
+	router.Handle("GET /build/", http.StripPrefix("/build/", http.FileServer(http.Dir("./frontend/public/build"))))
+	router.HandleFunc("GET /health", s.healthHandler)
+
+	router.HandleFunc("GET /hello", s.HelloWorldHandler)
+
+	// Wrap the mux with CORS middleware
+	return middleware.CorsMiddleware(router)
 }
 
 func handleServerErr(w http.ResponseWriter, err error) {
@@ -32,18 +37,14 @@ func handleServerErr(w http.ResponseWriter, err error) {
 	w.Write([]byte("server error"))
 }
 
-func (s *Server) HomeHandler(i *inertia.Inertia) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		err := i.Render(w, r, "home/index", inertia.Props{
-			"text": "Inertia.js with Svelte and Go! 💙",
-		})
-		if err != nil {
-			handleServerErr(w, err)
-			return
-		}
+func (s *Server) HomeHandler(w http.ResponseWriter, r *http.Request) {
+	err := s.inertia.Render(w, r, "home/index", inertia.Props{
+		"text": "Inertia.js with Svelte and Go! 💙",
+	})
+	if err != nil {
+		handleServerErr(w, err)
+		return
 	}
-
-	return http.HandlerFunc(fn)
 }
 
 func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
